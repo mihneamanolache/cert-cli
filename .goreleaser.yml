@@ -1,15 +1,26 @@
+project_name: cert-cli
 builds:
-  - env:
-      - CGO_ENABLED=0
-    goos:
+  - goos:
       - linux
       - darwin
       - windows
     goarch:
       - amd64
+      - arm64
+    main: ./cmd/main.go
+    ldflags:
+      - -s -w
 
-archive:
-  format: tar.gz
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 checksum:
-  name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}_checksums.txt"
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: your-github-username
+    repo: your-repo-name
+    draft: false
+    prerelease: false
