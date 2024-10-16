@@ -1,11 +1,10 @@
-# .goreleaser.yml
 version: 2
 
 project_name: cert-cli
 
 builds:
   - id: cert-cli
-    main: ./cmd/cert-cli/main.go  # Correct path to main.go
+    main: ./cmd/cert-cli/main.go
     goos:
       - linux
       - windows
@@ -25,10 +24,8 @@ checksum:
 
 release:
   github:
-    owner: "mihneamanolache"  # Update with your GitHub username
+    owner: "mihneamanolache"
     name: "cert-cli"
-    draft: false
-    prerelease: false
 
 changelog:
   sort: asc
