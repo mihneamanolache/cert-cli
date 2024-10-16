@@ -4,7 +4,7 @@ project_name: cert-cli
 
 builds:
   - id: cert-cli
-    main: ./cmd/cert-cli/main.go
+    main: ./cmd/main.go
     goos:
       - linux
       - windows
