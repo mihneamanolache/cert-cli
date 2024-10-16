@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"cert-cli/internal/types"
+	"github.com/mihneamanolache/cert-cli/internal/types"
 	"fmt"
 	"regexp"
 	"strings"

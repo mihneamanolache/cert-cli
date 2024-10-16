@@ -1,9 +1,9 @@
 package main
 
 import (
-	"cert-cli/internal/feed"
-	"cert-cli/internal/types"
-	"cert-cli/internal/utils"
+	"github.com/mihneamanolache/cert-cli/internal/feed"
+	"github.com/mihneamanolache/cert-cli/internal/types"
+	"github.com/mihneamanolache/cert-cli/internal/utils"
 	"flag"
 	"fmt"
 	"log"

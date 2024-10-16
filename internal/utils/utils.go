@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"cert-cli/internal/types"
+	"github.com/mihneamanolache/cert-cli/internal/types"
 	"encoding/json"
     "strings"
 	"fmt"
