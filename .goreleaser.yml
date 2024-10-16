@@ -1,0 +1,22 @@
+project_name: cert-cli
+
+builds:
+  - id: cert-cli
+    main: ./cmd/cert-cli  # Path to the directory containing the main.go file
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - 386
+    binary: cert-cli
+
+release:
+  github:
+    owner: mihneamanolache
+    name: cert-cli
+    draft: false
+    prerelease: false
+
