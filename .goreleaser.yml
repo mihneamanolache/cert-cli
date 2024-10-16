@@ -1,22 +1,38 @@
+# .goreleaser.yml
+version: 2
+
 project_name: cert-cli
 
 builds:
   - id: cert-cli
-    main: ./cmd/cert-cli  # Path to the directory containing the main.go file
+    main: ./cmd/cert-cli/main.go  # Correct path to main.go
     goos:
       - linux
-      - darwin
       - windows
+      - darwin
     goarch:
       - amd64
-      - arm64
       - 386
+      - arm64
     binary: cert-cli
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
 
 release:
   github:
-    owner: mihneamanolache
-    name: cert-cli
+    owner: "mihneamanolache"  # Update with your GitHub username
+    name: "cert-cli"
     draft: false
     prerelease: false
 
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
