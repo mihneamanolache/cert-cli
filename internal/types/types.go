@@ -1,8 +1,5 @@
 package types
 
-// MatchType defines the allowed match types for the search.
-type MatchType string
-
 // AtomEntry represents a single entry in the Atom feed.
 type AtomEntry struct {
 	ID      string `xml:"id"`
@@ -15,20 +12,25 @@ type AtomFeed struct {
 	Entries []AtomEntry `xml:"entry"`
 }
 
-// Address represents a structured address.
-type Address struct {
-	Postcode string `json:"postcode"`
-	Street   string `json:"street"`
-	County   string `json:"county"`
-	Country  string `json:"country"`
+// Certificate represents the certificate data extracted from a feed.
+type Certificate struct {
+    URL              string   `json:"url"`
+	Organization     string   `json:"organization"`
+	CommonName       string   `json:"commonName"`
+	SAN              []string `json:"san"`
+	Address          string   `json:"address"`
+	Issuer           string   `json:"issuer"`
+	SerialNumber     string   `json:"serialNumber"`
+	NotBefore        string   `json:"notBefore"`
+	NotAfter         string   `json:"notAfter"`
+	KeyUsage         []string `json:"keyUsage"`
+	SignatureAlgorithm string `json:"signatureAlgorithm"`
+	Version          int      `json:"version"`
 }
 
 // QueryResult holds all the findings for JSON output.
 type QueryResult struct {
-	Query         string    `json:"query"`
-	URL           string    `json:"url"`
-	Organizations []string  `json:"organizations"`
-	Addresses     []Address `json:"addresses"`
-	Domains       []string  `json:"domains"`
-	Entries       []string  `json:"entries"`
+	Query        string        `json:"query"`
+	URL          string        `json:"url"`
+	Certificates []Certificate `json:"certificates"`
 }

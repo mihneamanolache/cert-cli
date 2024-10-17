@@ -4,15 +4,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"github.com/mihneamanolache/cert-cli/internal/types"
 	"fmt"
+	"github.com/mihneamanolache/cert-cli/internal/types"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
 	"encoding/xml"
 	"io"
-	"net/http"
-	"net/url"
 )
 
 // ConstructFeedURL builds the Atom feed URL based on the query and match type.
@@ -21,46 +21,128 @@ func ConstructFeedURL(query string, match string) string {
 	return fmt.Sprintf("https://crt.sh/atom?q=%s&match=%s", encodedQuery, match)
 }
 
-// ProcessFeed processes the Atom feed and extracts data from each certificate.
-func ProcessFeed(feed *types.AtomFeed) (map[string]struct{}, map[types.Address]struct{}, map[string]struct{}, []string) {
-	organizations := make(map[string]struct{})
-	addresses := make(map[types.Address]struct{})
-	domains := make(map[string]struct{})
-	entryURLs := []string{}
-
-	for _, entry := range feed.Entries {
-		entryURLs = append(entryURLs, entry.ID)
-		certPem, err := extractCertFromSummary(entry.Summary)
-		if err != nil {
-			fmt.Printf(types.Red+"Error extracting certificate: %v\n"+types.Reset, err)
-			continue
+// filterNonEmpty removes empty parts from a slice of strings.
+func filterNonEmpty(parts []string) []string {
+	var result []string
+	for _, part := range parts {
+		if strings.TrimSpace(part) != "" { // Ensure that parts containing only whitespaces are excluded
+			result = append(result, part)
 		}
-		parseAndCollectInfo(certPem, organizations, addresses, domains)
 	}
-	return organizations, addresses, domains, entryURLs
+	return result
+}
+
+// parseCertInfo parses the X.509 certificate and collects relevant information.
+func parseCertInfo(certPem string, entryURL string) (types.Certificate, error) {
+	block, _ := pem.Decode([]byte(certPem))
+	if block == nil || block.Type != "CERTIFICATE" {
+		return types.Certificate{}, fmt.Errorf("failed to decode PEM block containing certificate")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return types.Certificate{}, fmt.Errorf("failed to parse certificate: %w", err)
+	}
+
+	// Extract fields
+	organization := strings.Join(cert.Subject.Organization, ", ")
+	commonName := cert.Subject.CommonName
+	issuer := cert.Issuer.CommonName
+	serialNumber := cert.SerialNumber.String()
+	notBefore := cert.NotBefore.Format(time.RFC3339)
+	notAfter := cert.NotAfter.Format(time.RFC3339)
+	version := cert.Version
+
+	// SAN (Subject Alternative Names)
+	var san []string
+	for _, dns := range cert.DNSNames {
+		san = append(san, dns)
+	}
+
+	// Key Usage
+	var keyUsage []string
+	if cert.KeyUsage&x509.KeyUsageDigitalSignature != 0 {
+		keyUsage = append(keyUsage, "Digital Signature")
+	}
+	if cert.KeyUsage&x509.KeyUsageKeyEncipherment != 0 {
+		keyUsage = append(keyUsage, "Key Encipherment")
+	}
+
+	// Address
+	address := strings.Join(filterNonEmpty([]string{
+		strings.Join(cert.Subject.PostalCode, " "),
+		strings.Join(cert.Subject.StreetAddress, " "),
+		strings.Join(cert.Subject.Province, " "),
+		strings.Join(cert.Subject.Country, " "),
+	}), " ")
+
+	// Signature Algorithm
+	signatureAlgorithm := cert.SignatureAlgorithm.String()
+
+	// Create the Certificate object
+	certificate := types.Certificate{
+		URL:               entryURL,
+		Organization:      organization,
+		CommonName:        commonName,
+		SAN:               san,
+		Address:           address,
+		Issuer:            issuer,
+		SerialNumber:      serialNumber,
+		NotBefore:         notBefore,
+		NotAfter:          notAfter,
+		KeyUsage:          keyUsage,
+		SignatureAlgorithm: signatureAlgorithm,
+		Version:           version,
+	}
+
+	return certificate, nil
+}
+
+// ProcessFeed processes the Atom feed and extracts data from each certificate.
+func ProcessFeed(feed *types.AtomFeed) ([]types.Certificate, []string) {
+    var certificates []types.Certificate
+    entryURLs := []string{}
+
+    for _, entry := range feed.Entries {
+        entryURLs = append(entryURLs, entry.ID)
+
+        certPem, err := extractCertFromSummary(entry.Summary)
+        if err != nil {
+            fmt.Printf(types.Red+"Error extracting certificate: %v\n"+types.Reset, err)
+            continue
+        }
+
+        certInfo, err := parseCertInfo(certPem, entry.ID)
+        if err != nil {
+            fmt.Printf(types.Red+"Error parsing certificate: %v\n"+types.Reset, err)
+            continue
+        }
+
+        certificates = append(certificates, certInfo)
+    }
+
+    return certificates, entryURLs
 }
 
 // FetchFeed fetches the Atom feed from the provided URL.
 func FetchFeed(feedURL string, proxyURL string) (*types.AtomFeed, error) {
-    var client *http.Client
-    if proxyURL != "" {
+	var client *http.Client
+	if proxyURL != "" {
 		proxy, err := url.Parse(proxyURL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid proxy URL: %w", err)
 		}
-		// Set up the transport with the proxy
 		transport := &http.Transport{
 			Proxy: http.ProxyURL(proxy),
 		}
-        transport.TLSClientConfig = &tls.Config{
+		transport.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
 		client = &http.Client{
 			Transport: transport,
 		}
-        fmt.Println( types.Yellow + "[i] Using proxy for this request!" + types.Reset)
+		fmt.Println(types.Yellow + "[i] Using proxy for this request!" + types.Reset)
 	} else {
-		// Use default HTTP client (no proxy)
 		client = &http.Client{}
 	}
 	resp, err := client.Get(feedURL)
@@ -69,11 +151,10 @@ func FetchFeed(feedURL string, proxyURL string) (*types.AtomFeed, error) {
 	}
 	defer resp.Body.Close()
 
-    
-    status := resp.StatusCode
-    if status != 200 {
-        return nil, fmt.Errorf("failed to fetch the feed. status_code: %d", status)
-    }
+	status := resp.StatusCode
+	if status != 200 {
+		return nil, fmt.Errorf("failed to fetch the feed. status_code: %d", status)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -114,33 +195,30 @@ func extractCertFromSummary(summary string) (string, error) {
 	return "", fmt.Errorf("no certificate found in the summary")
 }
 
-func parseAndCollectInfo(certPem string, organizations map[string]struct{}, addresses map[types.Address]struct{}, domains map[string]struct{}) error {
+func parseCertificate(certPem string, entryID string) (types.Certificate, error) {
 	block, _ := pem.Decode([]byte(certPem))
 	if block == nil || block.Type != "CERTIFICATE" {
-		return fmt.Errorf("failed to decode PEM block containing certificate")
+		return types.Certificate{}, fmt.Errorf("failed to decode PEM block containing certificate")
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse certificate: %w", err)
+		return types.Certificate{}, fmt.Errorf("failed to parse certificate: %w", err)
 	}
 
-	if cert.Subject.CommonName != "" {
-		domains[cert.Subject.CommonName] = struct{}{}
-	}
-	for _, org := range cert.Subject.Organization {
-		organizations[org] = struct{}{}
-	}
+	// Construct the concatenated address
+	address := strings.Join([]string{
+		strings.Join(cert.Subject.PostalCode, " "),
+		strings.Join(cert.Subject.StreetAddress, " "),
+		strings.Join(cert.Subject.Province, " "),
+		strings.Join(cert.Subject.Country, " "),
+	}, " ")
 
-	address := types.Address{
-		Postcode: strings.Join(cert.Subject.PostalCode, " "),
-		Street:   strings.Join(cert.Subject.StreetAddress, " "),
-		County:   strings.Join(cert.Subject.Province, " "),
-		Country:  strings.Join(cert.Subject.Country, " "),
-	}
-	if address != (types.Address{}) {
-		addresses[address] = struct{}{}
-	}
-
-	return nil
+	return types.Certificate{
+		URL:          entryID,
+		Organization: strings.Join(cert.Subject.Organization, ", "),
+		CommonName:   cert.Subject.CommonName,
+		SAN:          cert.DNSNames,
+		Address:      address,
+	}, nil
 }
