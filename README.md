@@ -14,24 +14,17 @@ This tool helps you gather domains, organizations, and addresses from X.509 cert
 
 ## Installation
 
-### Using Go
-To install the latest version using Go:
-
-```bash
-go install github.com/mihneamanolache/cert-cli@latest
-```
-
-This command will download, build, and install cert-cli into your Go workspace.
-
 ### Download the Binary
-You can download the latest binary from the [releases page]() and add it to your PATH.
+You can download the latest binary from the [releases page](https://github.com/mihneamanolache/cert-cli/releases) and add it to your PATH.
 ```bash
 # Download the binary
-wget https://github.com/mihneamanolache/cert-cli/releases/download/$VERSION/osint-cert-cli-linux-amd64
+wget https://github.com/mihneamanolache/cert-cli/releases/download/$VERSION/cert-cli-linux-amd64.tar.gz
+# Extract the binary
+tar -xvzf cert-cli-linux-amd64.tar.gz
 # Make the binary executable
-chmod +x osint-cert-cli-linux-amd64
+chmod +x cert-cli
 # Move the binary to your PATH
-mv osint-cert-cli-linux-amd64 /usr/local/bin/cert-cli
+sudo mv cert-cli /usr/local/bin/cert-cli
 ```
 
 ### Build from Source
@@ -39,7 +32,7 @@ To build from source, clone the repository and run the following commands:
 
 ```bash
 # Clone the repository
-git clone 
+git clone https://github.com/mihneamanolache/cert-cli
 # Change the directory
 cd cert-cli
 # Build the binary
