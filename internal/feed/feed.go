@@ -161,8 +161,11 @@ func FetchFeed(feedURL string, proxyURL string) (*types.AtomFeed, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	decoder := xml.NewDecoder(strings.NewReader(string(body)))
+	decoder.Strict = false
+
 	var feed types.AtomFeed
-	if err := xml.Unmarshal(body, &feed); err != nil {
+	if err := decoder.Decode(&feed); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal XML: %w", err)
 	}
 

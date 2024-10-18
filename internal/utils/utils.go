@@ -5,7 +5,20 @@ import (
 	"fmt"
 	"github.com/mihneamanolache/cert-cli/internal/types"
 	"io"
+    "strings"
 )
+
+// escapeXML replaces special characters with their corresponding XML escape codes.
+func EscapeXML(input string) string {
+    replacer := strings.NewReplacer(
+		// "&", "&amp;",
+		// "<", "&lt;",
+		// ">", "&gt;",
+		// "\"", "&quot;",
+		// "'", "&apos;",
+	)
+	return replacer.Replace(input)
+}
 
 // SaveToJSON writes the query result to a JSON file.
 func SaveToJSON(file io.Writer, data types.QueryResult) error {
@@ -14,7 +27,6 @@ func SaveToJSON(file io.Writer, data types.QueryResult) error {
 	return encoder.Encode(data)
 }
 
-// PrintResults prints the certificate information to the console.
 // PrintResults prints the certificate information to the console.
 func PrintResults(certificates []types.Certificate) {
 	if len(certificates) == 0 {
