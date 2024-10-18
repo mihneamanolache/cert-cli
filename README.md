@@ -150,6 +150,7 @@ Output:
       "signatureAlgorithm": "SHA1-RSA",
       "version": 3
     }
+  ]
 }
 ```
 

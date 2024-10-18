@@ -178,6 +178,10 @@ func FetchFeedWithRetry(feedURL string, retries int, proxyURL string) (*types.At
 	var err error
 
 	for i := 0; i <= retries; i++ {
+        // if we have more than 2 retries, exclude expired certificates to increase the chances of getting a response
+        if i > 2 {
+			feedURL += "&exclude=expired"
+		}
 		feed, err = FetchFeed(feedURL, proxyURL)
 		if err == nil {
 			return feed, nil
