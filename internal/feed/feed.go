@@ -182,6 +182,9 @@ func FetchFeedWithRetry(feedURL string, retries int, proxyURL string) (*types.At
         if i > 2 {
 			feedURL += "&exclude=expired"
 		}
+        if i > 3 {
+            feedURL += "&deduplicate=Y"
+        }
 		feed, err = FetchFeed(feedURL, proxyURL)
 		if err == nil {
 			return feed, nil
