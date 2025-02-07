@@ -67,4 +67,3 @@ Using `cert-cli`, you can efficiently map an organization's web infrastructure a
 For advanced usage, modify `analyse.ipynb` to include additional transformations, visualizations, or integrations with security monitoring tools.
 
 Happy hacking! 
-
