@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"github.com/mihneamanolache/cert-cli/internal/types"
 	"io"
-    "strings"
+	"strings"
 )
 
 // escapeXML replaces special characters with their corresponding XML escape codes.
 func EscapeXML(input string) string {
-    replacer := strings.NewReplacer(
-		// "&", "&amp;",
-		// "<", "&lt;",
-		// ">", "&gt;",
-		// "\"", "&quot;",
-		// "'", "&apos;",
+	replacer := strings.NewReplacer(
+	// "&", "&amp;",
+	// "<", "&lt;",
+	// ">", "&gt;",
+	// "\"", "&quot;",
+	// "'", "&apos;",
 	)
 	return replacer.Replace(input)
 }
@@ -110,4 +110,26 @@ func PrintResults(certificates []types.Certificate) {
 	} else {
 		fmt.Println("  - None")
 	}
+}
+
+// PrintCertificate displays detailed information for a single certificate.
+func PrintCertificate(cert types.Certificate) {
+	fmt.Println(types.Bold + "Certificate:" + types.Reset)
+	fmt.Printf("  Organization: %s\n", cert.Organization)
+	fmt.Printf("  Common Name: %s\n", cert.CommonName)
+	if len(cert.SAN) > 0 {
+		fmt.Printf("  SANs: %s\n", strings.Join(cert.SAN, ", "))
+	}
+	if cert.Address != "" {
+		fmt.Printf("  Address: %s\n", cert.Address)
+	}
+	fmt.Printf("  Issuer: %s\n", cert.Issuer)
+	fmt.Printf("  Serial Number: %s\n", cert.SerialNumber)
+	fmt.Printf("  Not Before: %s\n", cert.NotBefore)
+	fmt.Printf("  Not After: %s\n", cert.NotAfter)
+	if len(cert.KeyUsage) > 0 {
+		fmt.Printf("  Key Usage: %s\n", strings.Join(cert.KeyUsage, ", "))
+	}
+	fmt.Printf("  Signature Algorithm: %s\n", cert.SignatureAlgorithm)
+	fmt.Printf("  Version: %d\n", cert.Version)
 }

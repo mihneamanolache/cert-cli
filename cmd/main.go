@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/mihneamanolache/cert-cli/internal/feed"
+	"github.com/mihneamanolache/cert-cli/internal/live"
 	"github.com/mihneamanolache/cert-cli/internal/types"
 	"github.com/mihneamanolache/cert-cli/internal/utils"
 	"log"
@@ -13,28 +14,52 @@ import (
 func main() {
 	// Parse command-line flags
 	query := flag.String("q", "", "organization to search for in the certificate's subject field")
+	domain := flag.String("d", "", "perform live check for domain")
 	match := flag.String("match", "LIKE", "Match type (allowed values: =, ILIKE, LIKE, single, any, FTS)")
 	proxy := flag.String("proxy", "", "proxy")
 	jsonOutput := flag.String("o", "", "save findings to JSON file")
 	flag.Parse()
+
+	if *domain != "" {
+		certInfo, err := live.CheckDomain(*domain)
+		if err != nil {
+			log.Fatalf(types.Red+"Error checking domain: %v"+types.Reset, err)
+		}
+		utils.PrintCertificate(certInfo)
+		if *jsonOutput != "" {
+			results := types.QueryResult{
+				Query:        *domain,
+				URL:          *domain,
+				Certificates: []types.Certificate{certInfo},
+			}
+			file, err := os.Create(fmt.Sprintf("%s.json", *jsonOutput))
+			if err != nil {
+				log.Fatalf(types.Red+"Error creating JSON file: %v"+types.Reset, err)
+			}
+			defer file.Close()
+			utils.SaveToJSON(file, results)
+			fmt.Println(types.Yellow + "\n[i] Findings have been saved to " + file.Name() + types.Reset)
+		}
+		return
+	}
 
 	if *query == "" {
 		log.Fatalf(types.Red + "You must provide a query using --q flag" + types.Reset)
 	}
 
 	feedURL := feed.ConstructFeedURL(*query, *match)
-	fmt.Printf(types.Bold + "[i] Fetching feed: %s\n" + types.Reset, feedURL)
+	fmt.Printf(types.Bold+"[i] Fetching feed: %s\n"+types.Reset, feedURL)
 	atomFeed, err := feed.FetchFeedWithRetry(feedURL, 3, *proxy)
 	if err != nil {
-		log.Fatalf(types.Red + "Error fetching feed: %v" + types.Reset, err)
+		log.Fatalf(types.Red+"Error fetching feed: %v"+types.Reset, err)
 	}
 
 	certificates, entryURLs := feed.ProcessFeed(atomFeed)
 
-	fmt.Printf(types.Bold + "[i] Query: %s\n" + types.Reset, *query)
+	fmt.Printf(types.Bold+"[i] Query: %s\n"+types.Reset, *query)
 	fmt.Printf("[i] Parsed %d certificates\n\n", len(entryURLs))
 
-    utils.PrintResults(certificates)
+	utils.PrintResults(certificates)
 
 	// Save results to JSON if requested
 	if *jsonOutput != "" {
@@ -46,7 +71,7 @@ func main() {
 
 		file, err := os.Create(fmt.Sprintf("%s.json", *jsonOutput))
 		if err != nil {
-			log.Fatalf(types.Red + "Error creating JSON file: %v" + types.Reset, err)
+			log.Fatalf(types.Red+"Error creating JSON file: %v"+types.Reset, err)
 		}
 		defer file.Close()
 
@@ -54,4 +79,3 @@ func main() {
 		fmt.Println(types.Yellow + "\n[i] Findings have been saved to " + file.Name() + types.Reset)
 	}
 }
-

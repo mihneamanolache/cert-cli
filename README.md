@@ -11,6 +11,7 @@ This tool helps you gather domains, organizations, and addresses from X.509 cert
 - Supports multiple query types:  `=`, `ILIKE`, `LIKE`, `single`, `any`, `FTS`
 - Save the results in JSON format
 - Cross-platform support (Linux, macOS, Windows)
+- Live certificate inspection for any domain
 
 ## Installation
 
@@ -44,6 +45,7 @@ mv cert-cli /usr/local/bin
 ## Usage
 ```bash
 cert-cli -q "<company or domain>" -match "<query-type>" -o <output-file> -proxy "<proxy-url>"
+cert-cli -d "<domain>" -o <output-file>
 ```
 
 ### Flags
@@ -51,11 +53,12 @@ cert-cli -q "<company or domain>" -match "<query-type>" -o <output-file> -proxy 
 - `-match`: The query type to use. Supported values are `LIKE`, `ANY`, `ILIKE`
 - `-o`: The output file to save the results in JSON format
 - `-proxy`: The proxy URL to use for the request
+- `-d`: Perform a live TLS check for the specified domain
 
 ### Example Commands
 Search for certificates for `Dreamwors` with the match type `LIKE`:
 ```bash
-cert-cli -q "Dreamworks" -match "LIKE" 
+cert-cli -q "Dreamworks" -match "LIKE"
 
 # Output
 [i] Fetching feed: https://crt.sh/atom?q=Dreamworks&match=LIKE
@@ -101,6 +104,11 @@ Found:
   - northcarolina.win.dreamworks.com
   - dreamworksanimation.com
   - devilrays.win.dreamworks.com
+```
+
+Check the currently served certificate for `example.com`:
+```bash
+cert-cli -d example.com
 ```
 
 Should you need to save the results in a file, you can use the `-o` flag:
